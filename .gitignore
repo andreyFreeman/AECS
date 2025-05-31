@@ -8,6 +8,8 @@
 /Makefile
 compile_commands.json
 
+*.plist
+
 # CLion project files
 .idea/
 *.iml
