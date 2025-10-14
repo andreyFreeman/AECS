@@ -9,6 +9,7 @@
 
 #include "Chunks/ChunkFactory.hpp"
 #include <algorithm>
+#include <cassert>
 #include <ranges>
 #include "ComponentRegistry.hpp"
 

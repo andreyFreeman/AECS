@@ -86,8 +86,18 @@ namespace ECS {
         }
 
         template<typename... Components>
+        struct Query{};
+        
+        template<typename... Included, typename... Excluded>
+        [[nodiscard]]
+        ComponentViewSubscribed<Included...> createComponentViewWithQuery(Query<Included...>, Query<Excluded...>) const {
+            Signature excluding = SignatureID<Excluded...>::signature();
+            return ComponentViewSubscribed<Included...>(archetypeStore, excluding);
+        }
+        
+        template<typename... Components>
         [[nodiscard]] ComponentViewSubscribed<Components...> createComponentView() const {
-            return ComponentViewSubscribed<Components...>(archetypeStore);
+            return createComponentViewWithQuery(Query<Components...>{}, Query{});
         }
     };
 }

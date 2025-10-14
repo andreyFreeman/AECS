@@ -78,6 +78,7 @@ public:
             }
             updated = b.value % 3;
             counter++;
+            return true;
         });
         auto enumerated = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
         std::cout << "[" << enumerated.count() << "][ns][" << counter << "][" << static_cast<double>(enumerated.count()) / counter << "]" <<
@@ -89,28 +90,10 @@ public:
 
 static constexpr auto entitiesToAdd = 3300000;
 
-static size_t g_allocationCount = 0;
-
-// void* operator new(std::size_t size) {
-//     ++g_allocationCount;
-//     std::cout << "[new] Allocating " << size << " bytes. Total allocations: " << g_allocationCount << "\n";
-//     void* p = std::malloc(size);
-//     if (!p) {
-//         throw std::bad_alloc();
-//     }
-//     return p;
-// }
-//
-// void operator delete(void* p) noexcept {
-//     // --g_allocationCount;
-//     // std::cout << "[delete] Freeing memory. Remaining allocations: " << g_allocationCount << "\n";
-//     std::free(p);
-// }
-
 int main(int argc, const char *argv[]) {
     auto counter = 0;
     static float sink = 0;
-    const auto entityManager = std::make_unique<ECS::EntityManager>();
+    const auto entityManager = std::make_shared<ECS::EntityManager>();
 
     auto view = entityManager->createComponentView<ComponentA, ComponentB, ComponentC>();
 
@@ -173,7 +156,9 @@ int main(int argc, const char *argv[]) {
         counter++;
         if (a.value) {
             sink += c.value - e;
+            return true;
         }
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -197,11 +182,13 @@ int main(int argc, const char *argv[]) {
 
     counter = 0;
     start = std::chrono::high_resolution_clock::now();
-    viewA.forEach([&counter](auto a) {
+    viewA.forEach([&counter](auto a) -> bool {
         if (a.value) {
             sink += 2;
+            return true;
         }
         counter++;
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -231,8 +218,10 @@ int main(int argc, const char *argv[]) {
         if (a.value) {
             b.value += 1;
             sink += b.value;
+            return true;
         }
         counter++;
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -262,8 +251,10 @@ int main(int argc, const char *argv[]) {
         if (c.value > 5) {
             b.value += 1;
             sink += b.value;
+            return true;
         }
         counter++;
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -293,8 +284,10 @@ int main(int argc, const char *argv[]) {
         if (c.value > 3) {
             b.value += 1;
             sink += b.value;
+            return true;
         }
         counter++;
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -310,8 +303,10 @@ int main(int argc, const char *argv[]) {
             b.value += 1;
             e.value1 += 10;
             sink += b.value;
+            return true;
         }
         counter++;
+        return false;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -322,7 +317,7 @@ int main(int argc, const char *argv[]) {
 
     char a;
     std::cin >> a;
-    auto systemAEBF = SystemABEF(*entityManager.get());
+    auto systemAEBF = SystemABEF(entityManager);
     for (auto i = 0; i < 100; i++) {
         systemAEBF.update(1.0f);
     }

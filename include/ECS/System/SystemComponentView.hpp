@@ -23,7 +23,7 @@ namespace ECS {
         explicit SystemComponentView(ComponentViewSubscribed<Components...> &&componentView) : componentView(std::move(componentView)) {
         }
 
-        explicit SystemComponentView(const EntityManager &manager) : componentView(manager.createComponentView<Components...>()) {
+        explicit SystemComponentView(const std::shared_ptr<EntityManager> &manager) : componentView(manager->createComponentView<Components...>()) {
         }
     };
 }

@@ -19,8 +19,6 @@ class WorldState final: public FSM::State {
 public:
     
     std::vector<std::shared_ptr<Updatable>> updatables;
-    
-    using duration = std::chrono::duration<double>;
 
     WorldState(const std::string& tag): tag(tag) { }
 
@@ -30,19 +28,18 @@ public:
         if (updatables.empty()) {
             return false;
         }
-        auto start = std::chrono::high_resolution_clock::now();
+//        auto start = std::chrono::high_resolution_clock::now();
         bool updated = false;
         for (const auto &updatable : updatables) {
             auto startSystem = std::chrono::high_resolution_clock::now();
             bool flag = updatable->update(dt);
-            duration elapsed = std::chrono::high_resolution_clock::now() - startSystem;
-            double elapsedTime = elapsed.count() * 1000;
-            std::cout << "\t[" << std::fixed << std::setprecision(3) << elapsedTime << "][SYSTEM]: " << flag << std::endl;
+            auto elapsedTime = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - startSystem).count();
+            std::cout << "\t[" << std::fixed << std::setprecision(4) << elapsedTime << "][SYSTEM]: " << flag << std::endl;
             updated = flag || updated;
         }
-        duration elapsed = std::chrono::high_resolution_clock::now() - start;
-        double elapsedTime = elapsed.count() * 1000;
-        std::cout << "[" << std::fixed << std::setprecision(3) << elapsedTime << "][WORLD][" << tag << "]: " << updated << std::endl;
+//        auto ms = std::chrono::duration<double, std::milli>(std::chrono::high_resolution_clock::now() - start).count();
+//        std::cout << "[" << std::fixed << std::setprecision(4) << ms << "][WORLD][" << tag << "]: " << updated << std::endl;
+        std::cout << "[WORLD][" << tag << "]: " << updated << std::endl;
         return updated;
     }
 

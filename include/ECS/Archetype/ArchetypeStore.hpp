@@ -72,11 +72,11 @@ namespace ECS {
 
         [[nodiscard]] const std::unique_ptr<ArchetypeStoreChangeNotifier> &getChangeNotifier() const { return changeNotifier; }
 
-        std::vector<const Archetype *> findArchetypes(const Signature &signature) const noexcept {
+        std::vector<const Archetype *> findArchetypes(const Signature &signature, const Signature excluding) const noexcept {
             std::vector<const Archetype *> results;
             results.reserve(archetypes.size());
             for (const auto &[bitset, archetype]: archetypes) {
-                if ((bitset.bitset & signature.bitset) == signature.bitset) {
+                if ((bitset.bitset & signature.bitset) == signature.bitset && (bitset.bitset & excluding.bitset) == 0) {
                     const Archetype *archetypePtr = archetype.get();
                     results.push_back(archetypePtr);
                 }

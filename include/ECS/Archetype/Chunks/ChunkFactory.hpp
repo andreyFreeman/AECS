@@ -50,9 +50,11 @@ class ChunkFactory final {
     explicit ChunkFactory(const Signature& bitset, const std::shared_ptr<ComponentRegistry>& registry, size_t chunkSize, size_t reserveChunks)
         : bitset(bitset), registry(registry), chunkSize(chunkSize), chunkCount(reserveChunks) {
         basePtr = static_cast<char *>(std::malloc(reserveChunks * chunkSize));
+#ifndef NDEBUG
         if (!basePtr) {
             throw std::bad_alloc();
         }
+#endif
 
         size_t entitySize = 0;
         for (auto i = bitset.lowestBit; i <= bitset.highestBit; i++) {
