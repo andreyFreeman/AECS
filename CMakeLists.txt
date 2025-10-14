@@ -12,7 +12,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 include_directories(Engine/include)
 
 add_executable(runner
-        Runner/main.cpp
+        main.cpp
+        Engine/include/ECS/EntityManager.hpp
         Engine/include/ECS/Archetype/ComponentRegistry.hpp
         Engine/include/ECS/Component/SignatureBitset.hpp
         Engine/include/ECS/Archetype/ArrayPool.hpp

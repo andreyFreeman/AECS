@@ -5,8 +5,8 @@
 //  Created by ANDREY KLADOV on 13/05/2025.
 //
 
-#include <ECS/EntityManager.hpp>
 #include <iostream>
+#include <ECS/EntityManager.hpp>
 #include <iomanip>
 #include <ECS/System/SystemComponentView.hpp>
 
@@ -92,6 +92,7 @@ static constexpr auto entitiesToAdd = 3300000;
 
 int main(int argc, const char *argv[]) {
     auto counter = 0;
+    auto g_allocationCount = 0;
     static float sink = 0;
     const auto entityManager = std::make_shared<ECS::EntityManager>();
 
