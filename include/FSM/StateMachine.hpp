@@ -24,19 +24,25 @@ public:
 template<Derived<State> T>
 class StateMachine final: public Updatable {
     std::shared_ptr<T> current = nullptr;
+    UpdatableFn currentFn{nullptr, nullptr};
 
 public:
     StateMachine() = default;
     
-    void setState(const std::shared_ptr<T>& newState) {
+    template<Derived<T> S>
+    void setState(const std::shared_ptr<S>& newState) {
         if (current != nullptr) current->exit();
         current = newState;
-        if (current != nullptr) current->enter();
+        currentFn = {nullptr, nullptr};
+        if (current != nullptr) {
+            current->enter();
+            currentFn = makeUpdatable<S>(newState.get());
+        }
     }
 
-    bool update(float dt) override {
+    bool update(const float dt) override {
         if (current) {
-            return current->update(dt);
+            return callUpdate(currentFn, dt);
         }
         return false;
     }

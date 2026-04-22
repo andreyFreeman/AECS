@@ -31,12 +31,12 @@ protected:
 };
 
 TEST_F(ArchetypeStoreTest, InitialComponentSetupWorks) {
-    bool added = store.setComponents(entity1, Position{1.0f, 2.0f});
+    const bool added = store.setComponents(entity1, Position{1.0f, 2.0f});
     EXPECT_TRUE(added);
 
     auto* pos = store.getComponent<Position>(entity1);
     ASSERT_NE(pos, nullptr);
-    Position expected{1.0f, 2.0f};
+    constexpr Position expected{1.0f, 2.0f};
     EXPECT_EQ(*pos, expected);
 }
 
@@ -52,7 +52,7 @@ TEST_F(ArchetypeStoreTest, AddComponentCreatesNewArchetype) {
     EXPECT_TRUE(store.hasComponent<Velocity>(entity1));
     auto* vel = store.getComponent<Velocity>(entity1);
     ASSERT_NE(vel, nullptr);
-    auto expected = Velocity{1.0f, 2.0f};
+    constexpr auto expected = Velocity{1.0f, 2.0f};
     EXPECT_EQ(*vel, expected);
 }
 
@@ -108,7 +108,7 @@ TEST_F(ArchetypeStoreTest, FindArchetypesReturnsMatches) {
 
     auto signature = Signature();
     signature.set(1);
-    auto results = store.findArchetypes(signature);
+    const auto results = store.findArchetypes(signature, {});
 
     EXPECT_EQ(results.size(), 2);
 }

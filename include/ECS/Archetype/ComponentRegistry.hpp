@@ -5,6 +5,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include "ECS/Component/ComponentTypeInfo.hpp"
 
 namespace ECS {
@@ -12,7 +13,7 @@ namespace ECS {
         std::array<ComponentTypeInfo, MAX_COMPONENTS> components{};
         std::bitset<MAX_COMPONENTS> bitset{};
     public:
-        __attribute__((noinline)) void registerComponent(const ComponentTypeInfo type) {
+        void registerComponent(const ComponentTypeInfo type) {
             if (bitset.test(type.type)) {
                 return;
             }
@@ -37,7 +38,7 @@ namespace ECS {
         }
 
         [[nodiscard]] std::vector<ComponentTypeInfo> getTypes(const Signature& bitset) const {
-            std::vector<ComponentTypeInfo> types;
+            std::vector<ComponentTypeInfo> types{};
             types.reserve(bitset.highestBit - bitset.lowestBit + 1);
             for (size_t i = bitset.lowestBit; i <= bitset.highestBit; ++i) {
                 if (bitset[i]) {

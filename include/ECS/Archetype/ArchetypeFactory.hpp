@@ -16,9 +16,10 @@ namespace ECS {
         const std::shared_ptr<ComponentRegistry> registry;
 
     public:
-        ArchetypeFactory(const std::shared_ptr<ComponentRegistry>& registry): registry(registry) { }
+        explicit ArchetypeFactory(const std::shared_ptr<ComponentRegistry>& registry): registry(registry) { }
 
-        __attribute__((noinline)) std::unique_ptr<Archetype> createArchetypeDynamic(const Signature &signature) {
+        [[nodiscard]] std::unique_ptr<Archetype> createArchetypeDynamic(const Signature &signature) const
+        {
             return std::make_unique<Archetype>(registry, signature, std::make_unique<ChunkFactory>(signature, registry, CHUNK_SIZE, MAX_CHUNK_COUNT));
         }
     };

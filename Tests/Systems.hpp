@@ -62,13 +62,13 @@ class DamageSystem final : public ECS::SystemComponentView<HealthComponent, Dama
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &health, auto &damage) {
+        return componentView.forEach([&](auto &health, auto &damage) {
             const int totalDamage = damage.atk - damage.def;
             if (health.hp > 0 && totalDamage > 0) {
                 health.hp = std::max(health.hp - totalDamage, 0);
             }
+            return true;
         });
-        return true;
     }
 };
 
@@ -77,13 +77,13 @@ class DataSystem final : public ECS::SystemComponentView<DataComponent> {
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &data) {
+        return componentView.forEach([&](auto &data) {
             data.thingy = (data.thingy + 1) % 1'000'000;
             data.dingy += 0.0001 * dt;
             data.mingy = !data.mingy;
             data.numgy = data.rng();
+            return true;
         });
-        return true;
     }
 };
 
@@ -92,7 +92,7 @@ class HealthSystem final : public ECS::SystemComponentView<HealthComponent> {
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &health) {
+        return componentView.forEach([&](auto &health) {
             if (health.hp <= 0 && health.status != StatusEffect::Dead) {
                 health.hp = 0;
                 health.status = StatusEffect::Dead;
@@ -105,8 +105,8 @@ public:
             } else {
                 health.status = StatusEffect::Alive;
             }
+            return true;
         });
-        return true;
     }
 };
 
@@ -115,7 +115,7 @@ class MoreComplexSystem final : public ECS::SystemComponentView<const PositionCo
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &position, auto &direction, auto &data) {
+        return componentView.forEach([&](auto &position, auto &direction, auto &data) {
             if ((data.thingy % 10) == 0) {
                 if (position.x > position.y) {
                     direction.x = data.rng.range(3, 19) - 10.0F;
@@ -125,8 +125,8 @@ public:
                     direction.y = data.rng.range(3, 19) - 10.0F;
                 }
             }
+            return true;
         });
-        return true;
     }
 };
 
@@ -135,11 +135,11 @@ class MovementSystem final : public ECS::SystemComponentView<PositionComponent, 
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &position, auto &direction) {
+        return componentView.forEach([&](auto &position, auto &direction) {
             position.x += direction.x * dt;
             position.y += direction.y * dt;
+            return true;
         });
-        return true;
     }
 };
 
@@ -148,9 +148,9 @@ class RenderSystem final : public ECS::SystemComponentView<const PositionCompone
 
 public:
     bool update(float dt) override {
-        componentView.forEach([&](auto &position, auto &sprite) {
+        return componentView.forEach([&](auto &position, auto &sprite) {
+            return true;
         });
-        return true;
     }
 };
 
@@ -166,7 +166,7 @@ public:
     inline static constexpr char NoneSprite = ' ';
 
     bool update(float dt) override {
-        componentView.forEach([&](auto &sprite, auto &player, auto &health) {
+        return componentView.forEach([&](auto &sprite, auto &player, auto &health) {
             sprite.character = [&]() {
                 switch (health.status) {
                     case StatusEffect::Alive:
@@ -186,21 +186,21 @@ public:
                 }
                 return NoneSprite;
             }();
+            return true;
         });
-        return true;
     }
 };
 
 class FrameBuffer {
 public:
-    FrameBuffer(uint32_t w, uint32_t h)
+    FrameBuffer(const uint32_t w, const uint32_t h)
         : m_width{w}, m_height{h}, m_buffer(static_cast<size_t>(m_width) * static_cast<size_t>(m_height)) {
     }
 
     [[nodiscard]] auto width() const noexcept { return m_width; }
     [[nodiscard]] auto height() const noexcept { return m_height; }
 
-    void draw(int x, int y, char c) {
+    void draw(const int x, const int y, const char c) {
         if (y >= 0 && std::cmp_less(y, m_height)) {
             if (x >= 0 && std::cmp_less(x, m_width)) {
                 m_buffer[static_cast<size_t>(x) + static_cast<size_t>(y) * m_width] = c;

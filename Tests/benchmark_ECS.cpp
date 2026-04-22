@@ -11,12 +11,13 @@
 
 static void BM_createEntities(benchmark::State &state) {
     const auto entities = state.range(0);
-    const auto entityManager = std::make_unique<ECS::EntityManager>();
+    auto entityManager = ECS::EntityManager();
     for (auto _: state) {
         for (auto i = 0; i < entities; i++) {
-            entityManager->createWithComponents(PositionComponent(), VelocityComponent(), SpriteComponent());
+            entityManager.createWithComponents(PositionComponent(), VelocityComponent(), SpriteComponent());
         }
     }
+    state.SetItemsProcessed(state.iterations() * entities);
 }
 
 static void BM_iterateEntitiesWith1ComponentWithForEach(benchmark::State &state) {
@@ -40,39 +41,40 @@ static void BM_iterateEntitiesWith1ComponentWithForEach(benchmark::State &state)
             entityManager.setComponent(entity, VelocityComponent{});
         }
     }
-
     auto view = entityManager.createComponentView<PositionComponent>();
     for (auto _: state) {
         view.forEach([&](auto &position) {
             position.x += 0.03;
             position.y += 0.03;
+            return true;
         });
     }
+    state.SetItemsProcessed(state.iterations() * entities);
 }
 
 static void BM_updateEntitiesWith6ComponentsWithForEach(benchmark::State &state) {
     const auto entities = state.range(0);
-    auto entityManager = ECS::EntityManager();
+    auto entityManager = std::make_shared<ECS::EntityManager>();
     for (auto i = 0; i < entities; i++) {
-        const auto entity = entityManager.createWithComponents(PositionComponent(), SpriteComponent());
+        const auto entity = entityManager->createWithComponents(PositionComponent(), SpriteComponent());
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(0.0, 1.0);
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, DataComponent{});
+            entityManager->setComponent(entity, DataComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, DamageComponent{});
+            entityManager->setComponent(entity, DamageComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, HealthComponent{});
+            entityManager->setComponent(entity, HealthComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, VelocityComponent{});
+            entityManager->setComponent(entity, VelocityComponent{});
         }
     }
 
-    auto view = entityManager.createComponentView<PositionComponent, SpriteComponent, DataComponent, DamageComponent, HealthComponent,
+    auto view = entityManager->createComponentView<PositionComponent, SpriteComponent, DataComponent, DamageComponent, HealthComponent,
         VelocityComponent>();
     for (auto _: state) {
         view.forEach([&](auto &position, auto &sprite, auto &data, auto &damage, auto &health, auto &velocity) {
@@ -85,29 +87,31 @@ static void BM_updateEntitiesWith6ComponentsWithForEach(benchmark::State &state)
                     health.hp -= damage.atk;
                 }
             }
+            return true;
         });
     }
+    state.SetItemsProcessed(state.iterations() * entities);
 }
 
 static void BM_updateEntitiesWithMultipleSystems(benchmark::State &state) {
     const auto entities = state.range(0);
-    auto entityManager = ECS::EntityManager();
+    auto entityManager = std::make_shared<ECS::EntityManager>();
     for (auto i = 0; i < entities; i++) {
-        const auto entity = entityManager.createWithComponents(PositionComponent(), SpriteComponent());
+        const auto entity = entityManager->createWithComponents(PositionComponent(), SpriteComponent());
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(0.0, 1.0);
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, DataComponent{});
+            entityManager->setComponent(entity, DataComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, DamageComponent{});
+            entityManager->setComponent(entity, DamageComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, HealthComponent{});
+            entityManager->setComponent(entity, HealthComponent{});
         }
         if (dis(gen) > 0.1) {
-            entityManager.setComponent(entity, VelocityComponent{});
+            entityManager->setComponent(entity, VelocityComponent{});
         }
     }
 
@@ -128,19 +132,10 @@ static void BM_updateEntitiesWithMultipleSystems(benchmark::State &state) {
             system->update(0.08);
         }
     }
+    state.SetItemsProcessed(state.iterations() * entities);
 }
 
-BENCHMARK(BM_createEntities)->Arg(1)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64)->Arg(128)->Arg(256)->Arg(1024)->Arg(2048)->Arg(4096)->Arg(16000)->
-Arg(65000)->Arg(262000)->Arg(1000000)->Arg(2000000);
-
-BENCHMARK(BM_iterateEntitiesWith1ComponentWithForEach)->Arg(1)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64)->Arg(128)->Arg(256)->Arg(1024)->Arg(2048)->
-Arg(4096)->Arg(16000)->
-Arg(65000)->Arg(262000)->Arg(1000000)->Arg(2000000);
-
-BENCHMARK(BM_updateEntitiesWith6ComponentsWithForEach)->Arg(1)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64)->Arg(128)->Arg(256)->Arg(1024)->Arg(2048)->
-Arg(4096)->Arg(16000)->
-Arg(65000)->Arg(262000)->Arg(1000000)->Arg(2000000);
-
-BENCHMARK(BM_updateEntitiesWithMultipleSystems)->Arg(1)->Arg(4)->Arg(8)->Arg(16)->Arg(32)->Arg(64)->Arg(128)->Arg(256)->Arg(1024)->Arg(2048)->
-Arg(4096)->Arg(16000)->
-Arg(65000)->Arg(262000)->Arg(1000000)->Arg(2000000);
+BENCHMARK(BM_createEntities)->RangeMultiplier(4)->Range(1, 4194304)->Iterations(1);
+BENCHMARK(BM_iterateEntitiesWith1ComponentWithForEach)->RangeMultiplier(4)->Range(1, 2000000)->Iterations(10);
+BENCHMARK(BM_updateEntitiesWith6ComponentsWithForEach)->RangeMultiplier(4)->Range(1, 2000000)->Iterations(10);
+BENCHMARK(BM_updateEntitiesWithMultipleSystems)->RangeMultiplier(4)->Range(1, 2000000)->Iterations(10);

@@ -38,9 +38,9 @@ namespace ECS {
         }
 
         template<typename... Components>
-        Entity createWithComponents(const Components &... components) {
-            const auto value = getIndex();
-            if (!archetypeStore->setComponents(value, value, components...)) {
+        Entity createWithComponents(Components &&... components) {
+            auto value = getIndex();
+            if (!archetypeStore->setComponents(value, value, std::forward<Components>(components)...)) {
 #ifndef NDEBUG
                 throw std::runtime_error("Failed to setup components");
 #endif
@@ -49,11 +49,20 @@ namespace ECS {
         }
 
         template<typename Component>
-        Component *getComponent(const Entity entity) const { return archetypeStore->getComponent<Component>(entity); }
+        inline Component *getComponent(const Entity entity) const { return archetypeStore->getComponent<Component>(entity); }
+
+        inline bool fillComponentRecord(const Entity entity, const std::span<void *> record) const {
+            return archetypeStore->fillComponentRecord(entity, record);
+        }
+
+        template<size_t N>
+        inline bool fillComponentsInRecord(const Entity entity, const std::span<void *> record, const std::array<const ComponentType, N> components) const {
+            return archetypeStore->fillComponentsInRecord<N>(entity, record, components);
+        }
 
         template<typename Component>
-        void setComponent(const Entity entity, const Component &component) {
-            if (!archetypeStore->setComponents(entity, component)) {
+        void setComponent(Entity entity, Component &&component) {
+            if (!archetypeStore->setComponents(entity, std::forward<Component>(component))) {
 #ifndef NDEBUG
                 throw std::runtime_error("Failed to setup component");
 #endif
@@ -61,8 +70,8 @@ namespace ECS {
         }
 
         template<typename... Components>
-        void setComponents(const Entity entity, const Components &... components) {
-            if (!archetypeStore->setComponents(entity, entity, components...)) {
+        void setComponents(const Entity entity, Components &&... components) {
+            if (!archetypeStore->setComponents(entity, std::forward<Components>(components)...)) {
 #ifndef NDEBUG
                 throw std::runtime_error("Failed to setup components");
 #endif
@@ -71,6 +80,8 @@ namespace ECS {
 
         template<typename Component>
         [[nodiscard]] bool hasComponent(const Entity entity) const { return archetypeStore->hasComponent<Component>(entity); }
+
+        [[nodiscard]] const Signature& getSignature(const Entity entity) const  { return archetypeStore->getSignature(entity); }
 
         template<typename Component>
         void removeComponent(const Entity entity) const {
@@ -86,8 +97,18 @@ namespace ECS {
         }
 
         template<typename... Components>
+        struct Query{};
+        
+        template<typename... Included, typename... Excluded>
+        [[nodiscard]]
+        ComponentViewSubscribed<Included...> createComponentViewWithQuery(Query<Included...>, Query<Excluded...>) const {
+            Signature excluding = SignatureID<Excluded...>::signature();
+            return ComponentViewSubscribed<Included...>(archetypeStore, excluding);
+        }
+        
+        template<typename... Components>
         [[nodiscard]] ComponentViewSubscribed<Components...> createComponentView() const {
-            return ComponentViewSubscribed<Components...>(archetypeStore);
+            return createComponentViewWithQuery(Query<Components...>{}, Query{});
         }
     };
 }

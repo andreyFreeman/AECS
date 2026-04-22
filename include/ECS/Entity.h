@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <iostream>
+#include <cstdint>
 #include "Component/SignatureBitset.hpp"
 
 #ifndef MAX_COMPONENTS
@@ -28,11 +28,12 @@
 
 namespace ECS {
 
-    using Entity = uint64_t;
+    using Entity = uint32_t;
     using ComponentType = uint16_t;
     using ComponentTypeIndex = ComponentType;
     using Signature = SignatureBitset<MAX_COMPONENTS>;
     using SignatureKey = uint64_t;
     using QueryKey = SignatureKey;
 
+    static constexpr Entity INVALID_ENTITY = std::numeric_limits<Entity>::max();
 }

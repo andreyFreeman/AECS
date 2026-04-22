@@ -17,9 +17,9 @@ namespace ECS {
         static inline std::atomic<uint32_t> counter{0};
 
         template<typename T>
-        static constexpr ComponentTypeIndex get() {
+        static ComponentTypeIndex get() {
             using DecayedT = decay<T>;
-            static const ComponentTypeIndex id = getID<DecayedT>();
+            static ComponentTypeIndex id = getID<DecayedT>();
             return id;
         }
 

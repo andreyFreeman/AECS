@@ -11,18 +11,22 @@
 #include <algorithm>
 #include <ranges>
 #include "ComponentRegistry.hpp"
+#include <functional>
+#ifndef NDEBUG
+#include <cassert>
+#endif
 
 namespace ECS {
-
-    using ComponentsRecord = std::array<const void *, MAX_COMPONENTS>;
+    using ComponentsRecord = std::array<void *, MAX_COMPONENTS>;
 
     class Archetype final {
-
+    public:
         struct EntityLocation {
             Chunks::Index chunkIndex{};
             size_t indexInChunk{};
         };
 
+    private:
         const Signature signature;
         const std::shared_ptr<ComponentRegistry> registry;
         const std::unique_ptr<ChunkFactory> chunkFactory;
@@ -45,6 +49,9 @@ namespace ECS {
                 entityLocations.resize(entity + 1);
             }
             entityLocations[entity] = std::forward<EntityLocation>(location);
+            for (auto& subscriber : entityAddressesSubscription) {
+                subscriber(entity, this, std::forward<EntityLocation>(location));
+            }
         }
 
         void removeEntityLocation(const Entity entity) {
@@ -57,14 +64,7 @@ namespace ECS {
             }
         }
 
-        [[nodiscard]] std::optional<EntityLocation> getEntityLocation(const Entity entity) const {
-            if (entity < entityLocations.size()) {
-                return entityLocations[entity];
-            }
-            return std::nullopt;
-        }
-
-        bool addEntity(const Entity entity, std::span<const void *> data) noexcept {
+        bool addEntity(const Entity entity, std::span<void *> data) noexcept {
 #ifndef NDEBUG
             assert(entity == *static_cast<const Entity *>(data[0]));
 #endif
@@ -82,6 +82,7 @@ namespace ECS {
             }
 
             if (!addChunk()) {
+                std::cout << "[ERROR] could not create new CHUNK!" << std::endl;
                 return false;
             }
 
@@ -95,9 +96,8 @@ namespace ECS {
         }
 
     public:
-
-        Archetype(const std::shared_ptr<ComponentRegistry> &registry, const Signature& signature, std::unique_ptr<ChunkFactory> chunkFactory)
-            : signature(signature), registry(registry), chunkFactory(std::move(chunkFactory)), count(0) /*, indices(makeIndices(registry, signature))*/ {
+        Archetype(const std::shared_ptr<ComponentRegistry> &registry, const Signature &signature, std::unique_ptr<ChunkFactory> chunkFactory)
+            : signature(signature), registry(registry), chunkFactory(std::move(chunkFactory)), count(0) {
             chunks.reserve(this->chunkFactory->getChunkCount());
             entityLocations.reserve(this->chunkFactory->getChunkCount() * this->chunkFactory->getChunkCapacity());
         }
@@ -109,6 +109,7 @@ namespace ECS {
         [[nodiscard]] const std::vector<Chunks::Chunk> &getChunks() const noexcept { return chunks; }
         [[nodiscard]] const Chunks::Chunk &getChunk(const uint8_t index) const noexcept { return chunks[index]; }
         [[nodiscard]] const Chunks::Chunk &operator[](const std::size_t index) const noexcept { return chunks[index]; }
+        std::vector<std::function<void(Entity entity, Archetype *archetype, EntityLocation&& location)>> entityAddressesSubscription;
 
         bool remove(const Entity entity) {
             const auto location = getEntityLocation(entity);
@@ -134,19 +135,19 @@ namespace ECS {
             return true;
         }
 
-        [[nodiscard]] ComponentsRecord getComponentRecord(const Entity entity) const {
+        [[nodiscard]] ComponentsRecord getComponentRecord(Entity entity) const {
             ComponentsRecord record{};
             record[0] = &entity;
-#ifndef NDEBUG
             if (!fillComponentRecord(record)) {
+#ifndef NDEBUG
                 throw std::runtime_error("Failed to fill component record");
-            }
 #endif
+            }
             return record;
         }
 
-        bool fillComponentRecord(std::span<const void*> record) const {
-            const auto entity = *static_cast<const Entity *>(record[0]);
+        [[nodiscard]] bool fillComponentRecord(std::span<void *> record) const {
+            const auto entity = *reinterpret_cast<const Entity *>(record[0]);
             const auto location = getEntityLocation(entity);
             if (!location.has_value()) {
                 return false;
@@ -155,23 +156,55 @@ namespace ECS {
             const auto &chunk = chunks[chunkIndex];
             for (auto i = signature.lowestBit; i <= signature.highestBit; i++) {
                 if (signature[i]) {
-                    record[i] =  Chunks::get(chunk, i, index);
+                    record[i] = Chunks::get(chunk, i, index);
                 }
             }
             return true;
         }
 
+        [[nodiscard]] std::optional<EntityLocation> getEntityLocation(const Entity entity) const {
+            if (entity < entityLocations.size()) {
+                return entityLocations[entity];
+            }
+            return std::nullopt;
+        }
+
+        [[nodiscard]] bool fillComponentRecordByLocation(std::span<void *> record, const EntityLocation& location) const {
+            const auto &chunk = chunks[location.chunkIndex];
+            for (auto i = signature.lowestBit; i <= signature.highestBit; i++) {
+                if (signature[i]) {
+                    record[i] = Chunks::get(chunk, i, location.indexInChunk);
+                }
+            }
+            return true;
+        }
+
+        template<size_t N>
+        [[nodiscard]] bool fillComponentRecordByTypesByLocation(std::span<void *> record, const EntityLocation& location, const std::array<const ComponentType, N> types) const {
+            const auto &chunk = chunks[location.chunkIndex];
+            for (const auto& type : types) {
+                record[type] = Chunks::get(chunk, type, location.indexInChunk);
+            }
+            return true;
+        }
+
+        [[nodiscard]] void *getComponentByLocation(const EntityLocation& location, const ComponentType type) const noexcept {
+            const auto &chunk = chunks[location.chunkIndex];
+            return Chunks::get(chunk, type, location.indexInChunk);
+        }
+
         [[nodiscard]] void *getComponent(const Entity entity, const ComponentType type) const noexcept {
             const auto location = getEntityLocation(entity);
+#ifndef NDEBUG
+            assert(location.has_value());
+#endif
             if (!location.has_value()) {
                 return nullptr;
             }
-            const auto &[chunkIndex, index] = location.value();
-            const auto &chunk = chunks[chunkIndex];
-            return Chunks::get(chunk, type, index);
+            return getComponentByLocation(location.value(), type);
         }
 
-        bool set(const std::span<const void *> data) noexcept {
+        bool set(const std::span<void *> data) noexcept {
             const auto entity = *static_cast<const Entity *>(data[0]);
             const auto location = getEntityLocation(entity);
             if (!location.has_value()) {

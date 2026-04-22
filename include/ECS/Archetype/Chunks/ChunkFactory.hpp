@@ -6,7 +6,8 @@
 //
 
 #pragma once
-
+#include <iostream>
+#include <optional>
 #include <ECS/Component/ComponentTypeInfo.hpp>
 #include "Chunk.hpp"
 #include "ECS/Archetype/ComponentRegistry.hpp"
@@ -33,9 +34,9 @@ class ChunkFactory final {
     
     friend class ArchetypeFactory;
 
-    std::array<Chunks::ComponentData, MAX_COMPONENTS> makeComponents() const {
+    [[nodiscard]] std::array<Chunks::ComponentData, MAX_COMPONENTS> makeComponents() const {
         std::array<Chunks::ComponentData, MAX_COMPONENTS> components{};
-        auto chunkPtr = basePtr + chunkCreated * CHUNK_SIZE;
+        const auto chunkPtr = basePtr + chunkCreated * CHUNK_SIZE;
         for (auto i = bitset.lowestBit; i <= bitset.highestBit; i++) {
             if (bitset[i]) {
                 const auto& layout = chunkLayout[i];
@@ -47,12 +48,14 @@ class ChunkFactory final {
 
   public:
     
-    explicit ChunkFactory(const Signature& bitset, const std::shared_ptr<ComponentRegistry>& registry, size_t chunkSize, size_t reserveChunks)
+    explicit ChunkFactory(const Signature& bitset, const std::shared_ptr<ComponentRegistry>& registry, const size_t chunkSize, const size_t reserveChunks)
         : bitset(bitset), registry(registry), chunkSize(chunkSize), chunkCount(reserveChunks) {
-        basePtr = static_cast<char *>(std::malloc(reserveChunks * chunkSize));
+        basePtr = reinterpret_cast<char *>(std::malloc(reserveChunks * chunkSize));
+#ifndef NDEBUG
         if (!basePtr) {
             throw std::bad_alloc();
         }
+#endif
 
         size_t entitySize = 0;
         for (auto i = bitset.lowestBit; i <= bitset.highestBit; i++) {
@@ -79,7 +82,7 @@ class ChunkFactory final {
                     layout.offset = offset;
                     layout.size = type.size;
                     layout.alignment = type.alignment;
-                    size_t end = offset + type.size * capacity;
+                    const size_t end = offset + type.size * capacity;
                     if (end > chunkSize) {
                         fits = false;
                         break;
@@ -106,6 +109,7 @@ class ChunkFactory final {
 
     std::optional<Chunks::Chunk> create() {
         if (!canCreateChunk()) {
+            std::cout << "canCreateChunk() == false as chunkCreated " << chunkCreated << " < chunkCount " << chunkCount << std::endl;
             return std::nullopt;
         }
         Chunks::Chunk chunk{makeComponents(), 0, chunkCapacity, bitset};

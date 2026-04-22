@@ -39,7 +39,7 @@ TEST(ArchetypeTest, AddAndAccessEntities) {
     A a{42};
     B b{3.14f};
 
-    std::array<const void*, 3> data{(&e1), (&a), (&b)};
+    std::array<void*, 3> data{(&e1), (&a), (&b)};
 
     EXPECT_TRUE(archetype->set(data));
     EXPECT_EQ(archetype->size(), 1);
@@ -73,10 +73,10 @@ TEST(ArchetypeTest, RemoveEntity) {
     Entity e1 = 10;
     Entity e2 = 11;
 
-    std::array<const void*, 3> data{ &e1, &a, &b};
+    std::array<void*, 3> data{ &e1, &a, &b};
 
     EXPECT_TRUE(archetype->set(data));
-    data[0] = reinterpret_cast<const char *>(&e2);
+    data[0] = reinterpret_cast<char *>(&e2);
     EXPECT_TRUE(archetype->set(data));
     EXPECT_EQ(archetype->size(), 2);
 

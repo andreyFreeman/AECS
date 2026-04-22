@@ -33,7 +33,7 @@ protected:
 
 TEST_F(ChunkTest, AddAndSetWorks) {
     TestComponent testValue{42, 3.14f};
-    std::array<const void*, MAX_COMPONENTS> data{};
+    std::array<void*, MAX_COMPONENTS> data{};
     data[0] = &testValue;
 
     EXPECT_TRUE(add(*chunk, data));
@@ -43,7 +43,7 @@ TEST_F(ChunkTest, AddAndSetWorks) {
     EXPECT_FLOAT_EQ(compData[0].y, 3.14f);
 
     TestComponent newValue{7, 1.23f};
-    data[0] = reinterpret_cast<const char *>(&newValue);
+    data[0] = reinterpret_cast<char *>(&newValue);
     EXPECT_TRUE(set(*chunk, data, 0));
 
     EXPECT_EQ(compData[0].x, 7);

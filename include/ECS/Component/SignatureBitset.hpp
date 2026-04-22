@@ -55,7 +55,7 @@ namespace ECS {
             }
         }
 
-        bool none() const { return bitset.none(); }
+        [[nodiscard]] inline bool none() const { return bitset.none(); }
 
         template<typename Func>
         void forEachSetBit(Func f) const {
@@ -71,8 +71,8 @@ namespace ECS {
         bool operator[](std::size_t pos) const { return bitset.test(pos); }
         typename std::bitset<MaxComponents>::reference operator[](std::size_t pos) { return bitset[pos]; }
 
-        size_t count() const { return bitset.count(); }
-        bool test(std::size_t pos) const { return bitset.test(pos); }
+        [[nodiscard]] inline size_t count() const { return bitset.count(); }
+        [[nodiscard]] inline bool test(std::size_t pos) const { return bitset.test(pos); }
 
         void recalcBounds() {
             if (bitset.none()) {

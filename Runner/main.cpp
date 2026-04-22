@@ -5,9 +5,9 @@
 //  Created by ANDREY KLADOV on 13/05/2025.
 //
 
-#include <ECS/EntityManager.hpp>
 #include <iostream>
 #include <iomanip>
+#include <ECS/EntityManager.hpp>
 #include <ECS/System/SystemComponentView.hpp>
 
 struct A {
@@ -69,17 +69,16 @@ public:
     int counter = 0;
 
     bool update(float dt) override {
-        auto updated = false;
-        auto start = std::chrono::high_resolution_clock::now();
-        componentView.forEach([&](auto a, auto b, auto e, auto d) {
+        const auto start = std::chrono::high_resolution_clock::now();
+        const auto updated = componentView.forEach([&](const ComponentA &a, ComponentB &b, ComponentE &e, const ComponentD &d) {
             if (a.value) {
                 b.value += 1;
                 e.value1 += 10;
             }
-            updated = b.value % 3;
             counter++;
+            return true;
         });
-        auto enumerated = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
+        const auto enumerated = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
         std::cout << "[" << enumerated.count() << "][ns][" << counter << "][" << static_cast<double>(enumerated.count()) / counter << "]" <<
                 std::endl;
         counter = 0;
@@ -91,26 +90,10 @@ static constexpr auto entitiesToAdd = 3300000;
 
 static size_t g_allocationCount = 0;
 
-// void* operator new(std::size_t size) {
-//     ++g_allocationCount;
-//     std::cout << "[new] Allocating " << size << " bytes. Total allocations: " << g_allocationCount << "\n";
-//     void* p = std::malloc(size);
-//     if (!p) {
-//         throw std::bad_alloc();
-//     }
-//     return p;
-// }
-//
-// void operator delete(void* p) noexcept {
-//     // --g_allocationCount;
-//     // std::cout << "[delete] Freeing memory. Remaining allocations: " << g_allocationCount << "\n";
-//     std::free(p);
-// }
-
-int main(int argc, const char *argv[]) {
+int main() {
     auto counter = 0;
     static float sink = 0;
-    const auto entityManager = std::make_unique<ECS::EntityManager>();
+    const auto entityManager = std::make_shared<ECS::EntityManager>();
 
     auto view = entityManager->createComponentView<ComponentA, ComponentB, ComponentC>();
 
@@ -143,7 +126,7 @@ int main(int argc, const char *argv[]) {
         if (i % 2 == 0) {
             entityManager->setComponent<ComponentF>(i, ComponentF());
         } else {
-            entityManager->setComponents<ComponentD, ComponentE>(i, {10.0 * i}, {static_cast<float>(10.0) * i, 10 * i, false});
+            entityManager->setComponents<ComponentD, ComponentE>(i, ComponentD{10.0 * i}, ComponentE{static_cast<float>(10.0) * i, 10 * i, false});
         }
         counter++;
     }
@@ -174,6 +157,7 @@ int main(int argc, const char *argv[]) {
         if (a.value) {
             sink += c.value - e;
         }
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -202,6 +186,7 @@ int main(int argc, const char *argv[]) {
             sink += 2;
         }
         counter++;
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -233,6 +218,7 @@ int main(int argc, const char *argv[]) {
             sink += b.value;
         }
         counter++;
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -264,6 +250,7 @@ int main(int argc, const char *argv[]) {
             sink += b.value;
         }
         counter++;
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -295,6 +282,7 @@ int main(int argc, const char *argv[]) {
             sink += b.value;
         }
         counter++;
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -312,6 +300,7 @@ int main(int argc, const char *argv[]) {
             sink += b.value;
         }
         counter++;
+        return true;
     });
     elapsedNanos = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - start);
     elapsedMillis = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::high_resolution_clock::now() - start);
@@ -322,7 +311,7 @@ int main(int argc, const char *argv[]) {
 
     char a;
     std::cin >> a;
-    auto systemAEBF = SystemABEF(*entityManager.get());
+    auto systemAEBF = SystemABEF(entityManager);
     for (auto i = 0; i < 100; i++) {
         systemAEBF.update(1.0f);
     }

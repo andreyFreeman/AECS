@@ -10,7 +10,6 @@
 #include <ECS/Archetype/Archetype.hpp>
 #include "ComponentIterator.hpp"
 #include <ECS/Component/ComponentTypeID.hpp>
-#include <Templates.hpp>
 #include <memory>
 #include <thread>
 
@@ -45,8 +44,8 @@ namespace ECS {
         }
 
         template<typename Func, std::size_t... Is>
-        void callFunc(Func &&func, std::index_sequence<Is...>) {
-            func(*reinterpret_cast<Components *>(currentPtrs[Is])...);
+        bool callFunc(Func &&func, std::index_sequence<Is...>) {
+            return func(*reinterpret_cast<Components *>(currentPtrs[Is])...);
         }
 
     public:
@@ -63,9 +62,12 @@ namespace ECS {
         }
 
         template<typename Func>
-        void forEach(Func &&func) {
+        bool forEach(Func &&func) {
+            bool result = false;
             while (remainingEntities > 0) {
-                callFunc(std::forward<Func>(func), std::make_index_sequence<N>{});
+                if (callFunc(std::forward<Func>(func), std::make_index_sequence<N>{})) {
+                    result = true;
+                }
                 for (auto i = 0; i < N; ++i) {
                     currentPtrs[i] += strides[i];
                 }
@@ -73,6 +75,7 @@ namespace ECS {
                     advanceToNextChunk();
                 }
             }
+            return result;
         }
 
         template<typename Func>
@@ -100,6 +103,9 @@ namespace ECS {
     class ComponentView final {
         static const size_t N = sizeof...(Components);
         Signature signature = SignatureID<Components...>::signature();
+        static std::array<ComponentType, N> makeComponentArray() { return { ComponentTypeID::get<Components>()... }; }
+        
+        const std::array<ComponentType, N> components = makeComponentArray();
         std::vector<const Archetype *> archetypes;
         std::vector<IterationMeta<N> > iterationData;
 
@@ -114,40 +120,35 @@ namespace ECS {
                     IterationMeta<N> meta;
                     meta.count = chunk.size;
                     auto j = 0;
-                    for (auto type = signature.lowestBit; type <= signature.highestBit; ++type) {
-                        if (signature[type]) {
-                            const auto &component = chunk.components[type];
-                            meta.ptrs[j] = component.ptr;
-                            meta.stride[j] = component.stride;
-                            ++j;
-                        }
+                    for (const auto type: components) {
+                        const auto &component = chunk.components[type];
+                        meta.ptrs[j] = component.ptr;
+                        meta.stride[j] = component.stride;
+                        ++j;
                     }
                     iterationData.push_back(meta);
                 }
             }
         }
 
-        void addArchetype(const Archetype *archetype) {
-            archetypes.push_back(archetype);
-        }
-
         template<typename Func, std::size_t... Is>
-        void invoke(Func &&func, const IterationMeta<N> &meta, size_t index, std::index_sequence<Is...>) const {
-            func(*reinterpret_cast<Components *>(meta.ptrs[Is] + index * meta.stride[Is])...);
+        bool invoke(Func &&func, const IterationMeta<N> &meta, size_t index, std::index_sequence<Is...>) const {
+            return func(*reinterpret_cast<Components *>(meta.ptrs[Is] + index * meta.stride[Is])...);
         }
 
     public:
         explicit ComponentView(const std::vector<const Archetype *> &archetypes) {
             for (const auto &archetype: archetypes) {
-                addArchetype(archetype);
+                this->archetypes.push_back(archetype);
             }
             updateIterationData();
         }
 
         template<typename Func>
-        void forEach(Func &&func) const {
+        requires std::invocable<Func, Components&...>
+        bool forEach(Func &&func) {
             auto reader = ForwardPointerReader<Components...>(iterationData);
-            reader.forEach(std::forward<Func>(func));
+            return reader.forEach(std::forward<Func>(func));
         }
 
         ComponentIterator<Components...> begin() const { return ComponentIterator<Components...>(iterationData); }
