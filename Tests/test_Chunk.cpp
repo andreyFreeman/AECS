@@ -23,7 +23,7 @@ protected:
     void SetUp() override {
         compData.resize(capacity);
         std::array<ComponentData, MAX_COMPONENTS> components{};
-        ComponentData componentData{reinterpret_cast<char *>(compData.data()), sizeof(TestComponent)};
+        const ComponentData componentData{reinterpret_cast<char *>(compData.data()), sizeof(TestComponent)};
         components[0] = componentData;
         ECS::Signature signature;
         signature.set(0);

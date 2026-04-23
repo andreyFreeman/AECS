@@ -17,14 +17,14 @@ TEST(ArchetypeFactoryTest, CreateStaticArchetypeIncludesEntity) {
                         {0, sizeof(A), alignof(A)},
                         {1, sizeof(B), alignof(B)}
                     }};
-    auto registry = std::make_shared<ComponentRegistry>();
-    auto factory = ArchetypeFactory(registry);
+    const auto registry = std::make_shared<ComponentRegistry>();
+    const auto factory = ArchetypeFactory(registry);
     auto signature = Signature();
     for (const auto& type: types) {
         registry->registerComponent(type);
         signature.set(type.type);
     }
-    auto archetype = factory.createArchetypeDynamic(signature);
+    const auto archetype = factory.createArchetypeDynamic(signature);
 
     EXPECT_TRUE(archetype->getSignature().test(0));
     EXPECT_TRUE(archetype->getSignature().test(1));

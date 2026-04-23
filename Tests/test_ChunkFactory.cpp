@@ -26,8 +26,8 @@ TEST(ChunkFactoryTest, BasicCreation) {
         registry->registerComponent(type);
     }
 
-    const size_t chunkSize = 1024;
-    const size_t chunkCount = 2;
+    constexpr size_t chunkSize = 1024;
+    constexpr size_t chunkCount = 2;
     Signature bitset;
     bitset.set(0);
     bitset.set(1);

@@ -76,7 +76,7 @@ class DataSystem final : public ECS::SystemComponentView<DataComponent> {
     using SystemComponentView::SystemComponentView;
 
 public:
-    bool update(float dt) override {
+    bool update(const float dt) override {
         return componentView.forEach([&](auto &data) {
             data.thingy = (data.thingy + 1) % 1'000'000;
             data.dingy += 0.0001 * dt;
@@ -158,12 +158,12 @@ class SpriteSystem final : public ECS::SystemComponentView<SpriteComponent, cons
     using SystemComponentView::SystemComponentView;
 
 public:
-    inline static constexpr char PlayerSprite = '@';
-    inline static constexpr char MonsterSprite = 'k';
-    inline static constexpr char NPCSprite = 'h';
-    inline static constexpr char GraveSprite = '|';
-    inline static constexpr char SpawnSprite = '_';
-    inline static constexpr char NoneSprite = ' ';
+    static constexpr char PlayerSprite = '@';
+    static constexpr char MonsterSprite = 'k';
+    static constexpr char NPCSprite = 'h';
+    static constexpr char GraveSprite = '|';
+    static constexpr char SpawnSprite = '_';
+    static constexpr char NoneSprite = ' ';
 
     bool update(float dt) override {
         return componentView.forEach([&](auto &sprite, auto &player, auto &health) {
@@ -175,13 +175,13 @@ public:
                                 return PlayerSprite;
                             case PlayerType::Monster:
                                 return MonsterSprite;
-                            case PlayerType::NPC:
+                            default:
                                 return NPCSprite;
                         }
                         break;
                     case StatusEffect::Dead:
                         return GraveSprite;
-                    case StatusEffect::Spawn:
+                    default:
                         return SpawnSprite;
                 }
                 return NoneSprite;

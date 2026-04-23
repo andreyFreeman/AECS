@@ -20,13 +20,15 @@ AECS is a high-performance, cache-friendly C++ Entity Component System designed 
 
 ### Iteration
 ```c++
-auto view = entityManager->createComponentView<const A, C>();
+auto view = entityManager->createComponentView<const ECS::Entity, const A, C>();
 
 // functional forEach iteration
-view.forEach([](auto a, auto c) {
+view.forEach([](const ECS::Entity entity, const A &a, C &c) {
     if (!a.value) {
         c.y -= dt;
+        return true;
     }
+    return false;
 });
 
 // range iteratoration with tuples 
@@ -59,7 +61,7 @@ auto entityManager = ECS::EntityManager();
 // Create entities with components sets:
 auto entity1 = entityManager.createWithComponents(A{true}, B{1}, C{0.5f, 1.0f});
 
-// or add components later
+// add/replace components
 const auto entity2 = entityManager.create();
 entityManager.setComponent(entity2, C{1.0f, 2.5f});
 entityManager.setComponents(entity1, B{}, C{});
@@ -81,7 +83,7 @@ for (const auto& [a, c]: view) {
 }
 
 // forEach iteration
-view.forEach([](auto a, auto c) {
+view.forEach([](const A &a, C &c) {
     if (!a.value) {
         c.y -= dt;
     }
@@ -91,14 +93,13 @@ view.forEach([](auto a, auto c) {
 ```c++
 class SystemABC final : public ECS::SystemComponentView<const ECS::Entity, const A, B, C> {
     bool update(float dt) override {
-        auto updated = false;
-        componentView.forEach([&](auto e, auto a, auto b, auto c) {
+        return componentView.forEach([&](auto e, auto a, auto b, auto c) {
             if (a.value) {
                 c.x += b.value * dt;
-                updated = true;
+                return true;
             }
+            return false;
         });
-        return updated;
     }
 };
 ```

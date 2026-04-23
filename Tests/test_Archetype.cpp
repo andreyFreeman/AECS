@@ -59,14 +59,14 @@ TEST(ArchetypeTest, AddAndAccessEntities) {
 }
 
 TEST(ArchetypeTest, RemoveEntity) {
-    auto registry = std::make_shared<ComponentRegistry>();
-    auto factory = ArchetypeFactory(registry);
+    const auto registry = std::make_shared<ComponentRegistry>();
+    const auto factory = ArchetypeFactory(registry);
     auto signature = Signature();
     for (const auto& type: types) {
         registry->registerComponent(type);
         signature.set(type.type);
     }
-    auto archetype = factory.createArchetypeDynamic(signature);
+    const auto archetype = factory.createArchetypeDynamic(signature);
 
     A a{99};
     B b{1.0f};
