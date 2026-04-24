@@ -93,7 +93,7 @@ view.forEach([](const A &a, C &c) {
 ```c++
 class SystemABC final : public ECS::SystemComponentView<const ECS::Entity, const A, B, C> {
     bool update(float dt) override {
-        return componentView.forEach([&](auto e, auto a, auto b, auto c) {
+        return componentView.forEach([&](const ECS::Entity e, const A &a, B &b, C &c) {
             if (a.value) {
                 c.x += b.value * dt;
                 return true;
@@ -106,11 +106,11 @@ class SystemABC final : public ECS::SystemComponentView<const ECS::Entity, const
 
 ### World
 ```c++
-auto entityManager = ECS::EntityManager();
-auto world = ECS::World(entityManager);
-auto system = SystemABC(entityManager);
-world.addUpdatable(system);
-world.update(0.08f);
+auto entityManager = std::make_shared<ECS::EntityManager>();
+auto system = std::make_shared<SystemABC>(entityManager);
+auto world = std::make_shared<ECS::World>(entityManager);
+world->addUpdatable(system);
+world->update(0.08f);
 ```
 
 ## Performance
