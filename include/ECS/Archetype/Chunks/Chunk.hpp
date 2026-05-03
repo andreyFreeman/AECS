@@ -9,6 +9,7 @@
 
 #include <span>
 #include <array>
+#include <cstring>
 #ifndef NDEBUG
         #include <cassert>
 #endif
