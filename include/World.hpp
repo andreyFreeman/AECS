@@ -39,16 +39,16 @@ public:
         if (updatables.empty()) {
             return false;
         }
-        const auto start = std::chrono::steady_clock::now();
+        // const auto start = std::chrono::steady_clock::now();
         bool updated = false;
         for (const auto &updatable: updatableFns) {
             auto startSystem = std::chrono::steady_clock::now();
             const auto flag = callUpdate(updatable, dt);
-            const auto elapsedTime = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startSystem).count();
+            // const auto elapsedTime = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startSystem).count();
 //            std::cout << "\t[" << std::fixed << std::setprecision(4) << elapsedTime << "][SYSTEM]: " << flag << std::endl;
             updated = flag || updated;
         }
-        const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+        // const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
 //        std::cout << "[" << std::fixed << std::setprecision(4) << ms << "][WORLD][" << tag << "]: " << updated << std::endl;
         // std::cout << "[DT: " << dt * 1000 << "][WORLD][" << tag << "]: " << updated << std::endl;
         return updated;

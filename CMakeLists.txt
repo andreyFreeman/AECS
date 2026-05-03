@@ -16,7 +16,7 @@ target_compile_options(AECS INTERFACE
 )
 
 target_include_directories(AECS INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
 )
 
 target_compile_definitions(AECS INTERFACE
