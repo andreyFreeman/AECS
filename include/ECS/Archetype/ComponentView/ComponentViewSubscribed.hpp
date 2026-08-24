@@ -18,22 +18,27 @@ namespace ECS {
         bool reloadData = true;
 
         const std::unique_ptr<ComponentView<Components...>>& getView() {
-            if (reloadData || !view) {
-                reloadData = false;
+            if (!view) {
                 view = std::make_unique<ComponentView<Components...> >(store->findArchetypes(including, excluding));
+            } else if (reloadData) {
+                reloadData = false;
+                store->fillArchetypesMatching(including, excluding, view->getArchetypes());
+                view->updateIterationData();
             }
             return view;
         }
 
     public:
-        explicit ComponentViewSubscribed(const std::unique_ptr<ArchetypeStore> &store, Signature excluding) : store(store), excluding(excluding) {
+        explicit ComponentViewSubscribed(const std::unique_ptr<ArchetypeStore> &store, const Signature &excluding) : store(store), excluding(excluding) {
             store->getChangeNotifier()->subscribeToUpdate([this](const auto archetype) {
+                if (reloadData) return;
                 const auto &signature = archetype->getSignature().bitset;
-                reloadData = (((including.bitset & signature) == signature) && (this->excluding.bitset & signature) == 0);
+                reloadData = (including.bitset & signature) == including.bitset && (this->excluding.bitset & signature).none();
             });
             store->getChangeNotifier()->subscribeToAdd([this](const auto archetype) {
+                if (reloadData) return;
                 const auto &signature = archetype->getSignature().bitset;
-                reloadData = (((including.bitset & signature) == signature) && (this->excluding.bitset & signature) == 0);
+                reloadData = (including.bitset & signature) == including.bitset && (this->excluding.bitset & signature).none();
             });
         }
 

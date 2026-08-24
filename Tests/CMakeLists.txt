@@ -26,6 +26,7 @@ add_executable(tests
         test_ArchetypeFactory.cpp
         test_Archetype.cpp
         test_ArchetypeStore.cpp
+        test_ComponentViewSubscribed.cpp
 )
 
 target_link_libraries(tests PRIVATE gtest_main AECS)

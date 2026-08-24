@@ -109,10 +109,22 @@ namespace ECS {
         std::vector<const Archetype *> archetypes;
         std::vector<IterationMeta<N> > iterationData;
 
+        template<typename Func, std::size_t... Is>
+        static bool invoke(Func &&func, const IterationMeta<N> &meta, size_t index, std::index_sequence<Is...>) {
+            return func(*reinterpret_cast<Components *>(meta.ptrs[Is] + index * meta.stride[Is])...);
+        }
+
+    public:
+        explicit ComponentView(const std::vector<const Archetype *> &archetypes) {
+            for (const auto *archetype: archetypes) {
+                this->archetypes.push_back(archetype);
+            }
+            updateIterationData();
+        }
+
         void updateIterationData() {
             iterationData.clear();
-            for (auto i = 0; i < archetypes.size(); ++i) {
-                const auto &archetype = archetypes[i];
+            for (const auto *archetype : archetypes) {
                 for (const Chunks::Chunk &chunk: archetype->getChunks()) {
                     if (chunk.size == 0) {
                         continue;
@@ -131,17 +143,8 @@ namespace ECS {
             }
         }
 
-        template<typename Func, std::size_t... Is>
-        bool invoke(Func &&func, const IterationMeta<N> &meta, size_t index, std::index_sequence<Is...>) const {
-            return func(*reinterpret_cast<Components *>(meta.ptrs[Is] + index * meta.stride[Is])...);
-        }
-
-    public:
-        explicit ComponentView(const std::vector<const Archetype *> &archetypes) {
-            for (const auto &archetype: archetypes) {
-                this->archetypes.push_back(archetype);
-            }
-            updateIterationData();
+        std::vector<const Archetype *> &getArchetypes() {
+            return archetypes;
         }
 
         template<typename Func>

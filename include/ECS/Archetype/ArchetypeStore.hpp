@@ -51,7 +51,7 @@ namespace ECS {
                 address.location = location;
             });
             auto [newIt, _] = archetypes.emplace(bitmask, std::move(archetype));
-            auto ptr = newIt->second.get();
+            const auto ptr = newIt->second.get();
             changeNotifier->notifyAdd(ptr);
             return ptr;
         }
@@ -86,15 +86,20 @@ namespace ECS {
 
         [[nodiscard]] const std::unique_ptr<ArchetypeStoreChangeNotifier> &getChangeNotifier() const { return changeNotifier; }
 
-        [[nodiscard]] std::vector<const Archetype *> findArchetypes(const Signature &signature, const Signature &excluding) const noexcept {
-            std::vector<const Archetype *> results;
-            results.reserve(archetypes.size());
+        void fillArchetypesMatching(const Signature &signature, const Signature &excluding, std::vector<const Archetype *> &results) const noexcept {
+            results.clear();
             for (const auto &[bitset, archetype]: archetypes) {
                 if ((bitset.bitset & signature.bitset) == signature.bitset && (bitset.bitset & excluding.bitset) == 0) {
                     const Archetype *archetypePtr = archetype.get();
                     results.push_back(archetypePtr);
                 }
             }
+        }
+
+        [[nodiscard]] std::vector<const Archetype *> findArchetypes(const Signature &signature, const Signature &excluding) const noexcept {
+            std::vector<const Archetype *> results;
+            results.reserve(archetypes.size());
+            fillArchetypesMatching(signature, excluding, results);
             return results;
         }
 
@@ -127,7 +132,7 @@ namespace ECS {
         template<typename Component>
         bool removeComponent(Entity entity) {
             static const auto removed = ComponentTypeID::getTypeInfo<Component>();
-            auto prevArchetype = entitiesMap[entity].archetype;
+            const auto prevArchetype = entitiesMap[entity].archetype;
             if (!prevArchetype) {
                 return false;
             }
@@ -199,9 +204,9 @@ namespace ECS {
             static const auto typeId = ComponentTypeID::get<Component>();
             const auto& location = entitiesMap[entity];
             const auto* archetype = location.archetype;
-#ifndef NDEBUG
-            assert(archetype != nullptr);
-#endif
+// #ifndef NDEBUG
+//             assert(archetype != nullptr);
+// #endif
             if (!archetype) {
                 [[unlikely]] return nullptr;
             }
