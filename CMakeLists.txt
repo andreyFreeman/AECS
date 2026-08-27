@@ -6,7 +6,8 @@ set(ECS_CHUNK_SIZE "(128 * 1024)" CACHE STRING "Chunk size in bytes")
 set(ECS_MAX_CHUNK_COUNT 4096 CACHE STRING "Max chunks")
 set(ECS_MAX_ENTITIES 10000000 CACHE STRING "Max entities")
 
-add_library(AECS INTERFACE)
+add_library(AECS INTERFACE
+        include/ScopedTimer.hpp)
 
 set_target_properties(AECS PROPERTIES INTERFACE_CXX_EXTENSIONS OFF)
 target_compile_features(AECS INTERFACE cxx_std_23)

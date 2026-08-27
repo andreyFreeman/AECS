@@ -10,6 +10,8 @@
 #include <ECS/EntityManager.hpp>
 #include <ECS/System/SystemComponentView.hpp>
 
+#include "World.hpp"
+
 struct A {
     float x{0.0F};
     float y{0.0F};
@@ -316,6 +318,18 @@ int main() {
         systemAEBF.update(1.0f);
     }
     std::cout << systemAEBF.counter << std::endl;
+
+
+    auto world = World(entityManager);
+
+    const auto system = std::make_shared<SystemABEF>(entityManager);
+    world.addUpdatable(system);
+    world.unpause();
+    world.update(1.0f);
+
+    std::cout << "[" << std::fixed << std::setprecision(3) << world.getLastUpdateTime() << "ms][world with systemAEBF][" << counter << "]"  << std::endl;
+    std::cout << "[" << std::fixed << std::setprecision(3) <<  world.getUpdateTimesMs()[0] << "ms][systemAEBF inside world][" << counter << "]"  << std::endl;
+
     std::cout << "Sink: " << sink << std::endl;
     std::cout << "allocations: " << g_allocationCount << std::endl;
     return 0;

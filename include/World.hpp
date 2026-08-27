@@ -15,12 +15,16 @@
 #include <ECS/EntityManager.hpp>
 #include <FSM/StateMachine.hpp>
 
+#include "ScopedTimer.hpp"
+
 class WorldState final : public FSM::State {
     std::string tag;
 
 public:
     std::vector<std::shared_ptr<Updatable> > updatables;
     std::vector<UpdatableFn> updatableFns;
+    std::vector<double> updateTimesMs;
+    double updateTimeMs = 0.0;
 
     explicit WorldState(std::string tag): tag(std::move(tag)) {
     }
@@ -29,6 +33,7 @@ public:
     void addUpdatable(const std::shared_ptr<T> &updatable) {
         updatables.push_back(updatable);
         updatableFns.push_back(makeUpdatable<T>(updatable.get()));
+        updateTimesMs.emplace_back(0.0);
     }
 
     void enter() override {
@@ -36,21 +41,17 @@ public:
     }
 
     bool update(const float dt) override {
+        PROFILE_SCOPE(updateTimeMs);
         if (updatables.empty()) {
             return false;
         }
-        // const auto start = std::chrono::steady_clock::now();
         bool updated = false;
-        for (const auto &updatable: updatableFns) {
-            auto startSystem = std::chrono::steady_clock::now();
-            const auto flag = callUpdate(updatable, dt);
-            // const auto elapsedTime = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - startSystem).count();
-//            std::cout << "\t[" << std::fixed << std::setprecision(4) << elapsedTime << "][SYSTEM]: " << flag << std::endl;
+        for (auto i = 0; i < updatableFns.size(); ++i) {
+            const auto& update = updatableFns[i];
+            PROFILE_SCOPE(updateTimesMs[i]);
+            const auto flag = callUpdate(update, dt);
             updated = flag || updated;
         }
-        // const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
-//        std::cout << "[" << std::fixed << std::setprecision(4) << ms << "][WORLD][" << tag << "]: " << updated << std::endl;
-        // std::cout << "[DT: " << dt * 1000 << "][WORLD][" << tag << "]: " << updated << std::endl;
         return updated;
     }
 
@@ -96,4 +97,7 @@ public:
     void unpause() const { stateMachine->setState(stateRunning); }
     [[nodiscard]] bool isPaused() const { return stateMachine->currentState() == statePause; }
     [[nodiscard]] bool isIdle() const { return stateMachine->currentState() == stateIdle; }
+
+    [[nodiscard]] double getLastUpdateTime() const { return stateMachine->currentState()->updateTimeMs; }
+    [[nodiscard]] const std::vector<double>& getUpdateTimesMs() const { return stateMachine->currentState()->updateTimesMs; }
 };

@@ -26,6 +26,10 @@
 #define MAX_ENTITIES 10000000
 #endif
 
+#ifndef TIME_PROFILE_MODE
+#define TIME_PROFILE_MODE 0
+#endif
+
 namespace ECS {
 
     using Entity = uint32_t;
