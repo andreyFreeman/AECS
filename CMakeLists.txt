@@ -5,6 +5,7 @@ set(ECS_MAX_COMPONENTS 128 CACHE STRING "Max components")
 set(ECS_CHUNK_SIZE "(128 * 1024)" CACHE STRING "Chunk size in bytes")
 set(ECS_MAX_CHUNK_COUNT 4096 CACHE STRING "Max chunks")
 set(ECS_MAX_ENTITIES 10000000 CACHE STRING "Max entities")
+set(ECS_TIME_PROFILE_MODE 0 CACHE STRING "Time profiler enabled")
 
 add_library(AECS INTERFACE
         include/ScopedTimer.hpp)
@@ -25,6 +26,7 @@ target_compile_definitions(AECS INTERFACE
         CHUNK_SIZE=${ECS_CHUNK_SIZE}
         MAX_CHUNK_COUNT=${ECS_MAX_CHUNK_COUNT}
         MAX_ENTITIES=${ECS_MAX_ENTITIES}
+        TIME_PROFILE_MODE=${ECS_TIME_PROFILE_MODE}
 )
 
 add_library(Kladov::AECS ALIAS AECS)
