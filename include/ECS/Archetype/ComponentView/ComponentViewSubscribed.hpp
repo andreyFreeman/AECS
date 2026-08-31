@@ -17,6 +17,9 @@ namespace ECS {
         std::unique_ptr<ComponentView<Components...> > view;
         bool reloadData = true;
 
+        size_t subscriptionIdUpdate;
+        size_t subscriptionIdAdd;
+
         const std::unique_ptr<ComponentView<Components...>>& getView() {
             if (!view) {
                 view = std::make_unique<ComponentView<Components...> >(store->findArchetypes(including, excluding));
@@ -30,12 +33,12 @@ namespace ECS {
 
     public:
         explicit ComponentViewSubscribed(const std::unique_ptr<ArchetypeStore> &store, const Signature &excluding) : store(store), excluding(excluding) {
-            store->getChangeNotifier()->subscribeToUpdate([this](const auto archetype) {
+            subscriptionIdUpdate = store->getChangeNotifier()->subscribeToUpdate([this](const auto *archetype) {
                 if (reloadData) return;
                 const auto &signature = archetype->getSignature().bitset;
                 reloadData = (including.bitset & signature) == including.bitset && (this->excluding.bitset & signature).none();
             });
-            store->getChangeNotifier()->subscribeToAdd([this](const auto archetype) {
+            subscriptionIdAdd = store->getChangeNotifier()->subscribeToAdd([this](const auto *archetype) {
                 if (reloadData) return;
                 const auto &signature = archetype->getSignature().bitset;
                 reloadData = (including.bitset & signature) == including.bitset && (this->excluding.bitset & signature).none();
@@ -53,5 +56,10 @@ namespace ECS {
         template<typename Func>
         requires std::invocable<Func, Components&...>
         bool forEach(Func&& func) { return getView()->forEach(std::forward<Func>(func)); }
+
+        ~ComponentViewSubscribed() {
+            store->getChangeNotifier()->unsubscribeFromUpdate(subscriptionIdUpdate);
+            store->getChangeNotifier()->unsubscribeFromAdd(subscriptionIdAdd);
+        }
     };
 }

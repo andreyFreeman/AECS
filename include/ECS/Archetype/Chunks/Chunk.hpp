@@ -31,7 +31,7 @@ namespace ECS::Chunks {
         const Signature signature;
     };
 
-    static bool set(const Chunk &chunk, std::span<void *> data, Index index) {
+    static bool set(const Chunk &chunk, const std::span<void *> data, const Index index) {
         if (index >= chunk.capacity) {
             return false;
         }
@@ -46,12 +46,12 @@ namespace ECS::Chunks {
         return true;
     }
 
-    static bool add(const Chunk &chunk,  std::span<void *> data) {
+    static bool add(const Chunk &chunk, const std::span<void *> data) {
         return set(chunk, data, chunk.size);
     }
 
-    static void swap(const Chunk &chunk, Index source, Index destination) {
-        static const int16_t kBufferSize = 512;
+    static void swap(const Chunk &chunk, const Index source, const Index destination) {
+        static constexpr int16_t kBufferSize = 512;
         if (source == destination)
             return;
 

@@ -36,7 +36,7 @@ class ChunkFactory final {
 
     [[nodiscard]] std::array<Chunks::ComponentData, MAX_COMPONENTS> makeComponents() const {
         std::array<Chunks::ComponentData, MAX_COMPONENTS> components{};
-        const auto chunkPtr = basePtr + chunkCreated * CHUNK_SIZE;
+        const auto chunkPtr = basePtr + chunkCreated * chunkSize;
         for (auto i = bitset.lowestBit; i <= bitset.highestBit; i++) {
             if (bitset[i]) {
                 const auto& layout = chunkLayout[i];
@@ -50,7 +50,7 @@ class ChunkFactory final {
     
     explicit ChunkFactory(const Signature& bitset, const std::shared_ptr<ComponentRegistry>& registry, const size_t chunkSize, const size_t reserveChunks)
         : bitset(bitset), registry(registry), chunkSize(chunkSize), chunkCount(reserveChunks) {
-        basePtr = reinterpret_cast<char *>(std::malloc(reserveChunks * chunkSize));
+        basePtr = static_cast<char*>(aligned_alloc(64, reserveChunks * chunkSize));
 #ifndef NDEBUG
         if (!basePtr) {
             throw std::bad_alloc();

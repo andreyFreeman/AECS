@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <ECS/EntityManager.hpp>
 #include <ECS/System/SystemComponentView.hpp>
-
+#include <simd/simd.h>
 #include "World.hpp"
 
 struct A {
@@ -64,6 +64,157 @@ struct ComponentF {
 struct ComponentG {
 };
 
+#ifndef MAX_NAME_LENGTH
+#define MAX_NAME_LENGTH 32
+#endif
+
+namespace components {
+struct NameTag {
+    char name[MAX_NAME_LENGTH];
+};
+}
+
+namespace components {
+struct TransformData {
+    simd::float3 position{};
+    simd::quatf rotation;
+    simd::float3 scale{1, 1, 1};
+};
+
+struct Transform {
+    TransformData transform;
+    simd::float4x4 worldMatrix;
+    bool isDirty = true;
+};
+
+struct TransformChild {
+    ECS::Entity parent = ECS::INVALID_ENTITY;
+    ECS::Entity nextSibling = ECS::INVALID_ENTITY;
+    ECS::Entity prevSibling = ECS::INVALID_ENTITY;
+};
+
+struct TransformParent {
+    std::size_t childrenCount = 0;
+    ECS::Entity first = ECS::INVALID_ENTITY;
+    ECS::Entity last = ECS::INVALID_ENTITY;
+};
+
+struct Static {};
+}
+
+enum Layers : uint32_t {
+    None = 0,
+    Player = 1 << 0,
+    Geometry = 1 << 1,
+    NPC = 1 << 2,
+    Interactable = 1 << 3,
+};
+
+namespace components {
+struct Layer {
+    Layers value;
+};
+}
+
+#ifndef MAX_ACTIVE_COLLISIONS
+#define MAX_ACTIVE_COLLISIONS 8
+#endif
+
+using CollisionMask = uint32_t;
+
+enum class ColliderType : uint8_t {
+    Box,
+    Sphere
+};
+
+namespace components {
+struct CollisionData {
+    simd::float3 normal;
+    simd::float3 point;
+    ECS::Entity entity;
+    Layers layer;
+};
+
+struct Collider {
+    ColliderType type;
+    simd::float3 data;
+    simd::float3 aabbMin;
+    simd::float3 aabbMax;
+    bool isDirty;
+};
+
+struct Collisions {
+    CollisionMask collidesWith;
+    CollisionData collisions[MAX_ACTIVE_COLLISIONS];
+    uint16_t collisionCount;
+};
+}
+
+enum AbilityID : uint8_t {
+    Dash = 1 << 1,
+    Shot = 1 << 2,
+    Hook = 3 << 3
+};
+
+using AbilitiesMask = uint16_t;
+
+namespace components {
+struct Abilities {
+    AbilityID active;
+    AbilitiesMask available;
+};
+
+struct AbilityConfigDash {
+    float maxDistance = 100.0f;
+    float speed = 100.0f;
+};
+
+struct AbilityDashState {
+    simd::float3 startPosition;
+    simd::float3 direction;
+    float distanceCovered;
+    bool isActive;
+};
+}
+
+namespace components {
+struct PreviousPosition {
+    simd::float3 position;
+};
+}
+
+namespace components {
+struct Pawn {
+
+    enum class State : uint8_t {
+        Idle,
+        Moving
+    };
+
+    State state;
+};
+}
+
+namespace components {
+struct Input {
+    simd::float2 movementDirection;
+    bool hasActiveMovementInput;
+    bool abilitySwitch;
+};
+}
+
+namespace components {
+struct RigidBody {
+    float mass;
+    simd::float3 velocity;
+};
+}
+
+namespace components {
+struct Disabled {};
+}
+
+
 class SystemABEF final : public ECS::SystemComponentView<const ComponentA, ComponentB, ComponentE, const ComponentD> {
     using SystemComponentView::SystemComponentView;
 
@@ -96,6 +247,35 @@ int main() {
     auto counter = 0;
     static float sink = 0;
     const auto entityManager = std::make_shared<ECS::EntityManager>();
+
+    auto crashTestEntity = entityManager->createWithComponents(
+        components::NameTag{.name = "P1"},
+        components::Transform{
+            .transform = {
+                .position = {3.0f, 0.0f, 5.0f}
+            }
+        },
+        components::Layer{.value = Player},
+        components::Collider{.type = ColliderType::Sphere, .data = {0.5f, 0, 0}},
+        components::Collisions{.collidesWith = Geometry | Interactable | NPC},
+        components::Abilities{.active = Dash, .available = Dash | Shot | Hook},
+        components::PreviousPosition{},
+        components::Pawn{},
+        components::AbilityConfigDash{},
+        components::AbilityDashState{},
+        components::Input{},
+        components::RigidBody{}
+    );
+    entityManager->setComponent(crashTestEntity, components::Disabled{});
+    entityManager->removeComponent<components::Disabled>(crashTestEntity);
+
+    auto simdView = entityManager->createComponentView<components::Transform>();
+    float finalX = 0.0f;
+    simdView.forEach([&finalX](components::Transform& t) {
+        t.transform.position = t.transform.position + simd_make_float3(0.5f, 0.5f, 0.5f);
+        finalX = t.transform.position.x;
+        return true;
+    });
 
     auto view = entityManager->createComponentView<ComponentA, ComponentB, ComponentC>();
 

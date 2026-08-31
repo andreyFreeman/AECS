@@ -147,7 +147,7 @@ namespace ECS {
                 entitiesMap[entity].archetype = nullptr;
                 return true;
             }
-            auto nextArchetype = getOrCreateArchetype(bitmask);
+            const auto nextArchetype = getOrCreateArchetype(bitmask);
             if (!nextArchetype) {
                 prevArchetype->remove(entity);
                 changeNotifier->notifyUpdate(prevArchetype);
